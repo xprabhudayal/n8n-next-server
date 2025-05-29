@@ -1,0 +1,220 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -340,
+        420
+      ],
+      "id": "a5285d2b-90d9-438f-8ef7-742f0224fafc",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NbSiiiucIxoqBpgZ",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a smart job assistant.\nBased on the user's mentioned location, infer the ISO 2-letter country code (e.g., \"Bangalore\" → IN, \"Seattle\" → US). If unclear, default to US.\n\nFetch jobs for the query :{{ $json.body.message.toolCalls[0].function.arguments.query }} and return them as:\n[Company]; [Role]; [City/Country]\n\nAlways count the jobs found and mention the number. \nPrioritize recent or well-known companies. Highlight remote roles or special tags like \"Leadership\" or \"AI\".\n\nExample:\n“I found 5 jobs for Product Design:\n1. Figma; UX Designer; Remote\n2. Google; Senior Designer; Mountain View, US\n…”\n\nIf no jobs are found, say so and offer to expand search criteria.\n\nDo not show raw JSON. Respond like you're guiding a busy job seeker toward real opportunities and insights.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        80
+      ],
+      "id": "17bbf673-3c39-41e2-b31a-3944b99cd293",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "find jobs",
+        "url": "https://jsearch.p.rapidapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "num_pages",
+              "value": "1"
+            },
+            {
+              "name": "country",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters3_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "jsearch.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "10d7505033msha6af41aa6addff6p15c799jsn107705d3c2fd"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        40,
+        440
+      ],
+      "id": "ec87f6fa-cc21-420d-a502-8c9aee19ba99",
+      "name": "job-search1"
+    },
+    {
+      "parameters": {
+        "toolDescription": "market trends",
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "serpApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -120,
+        440
+      ],
+      "id": "bb39a16b-b0b5-4327-b6e0-fd150e69e26f",
+      "name": "market-trends1",
+      "credentials": {
+        "serpApi": {
+          "id": "nv7umO9OvZBG0KcN",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [
+        140,
+        160
+      ],
+      "id": "a3db0ccc-2447-4516-b748-3c7106e5bfda",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "api",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -540,
+        160
+      ],
+      "id": "de39f65d-b73c-4743-971c-c64681b30580",
+      "name": "Webhook",
+      "webhookId": "e297d7a5-cf4d-4edb-a353-19ef5af087fa"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "job-search1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "market-trends1": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "082c03cb-f643-467d-9814-004b7624c48d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54faca764ca39b8dd57a50bf07bdbb98be1b3773c08a8488480e4dae7636cd62"
+  },
+  "id": "7UQx7er7hVHFEkWD",
+  "tags": []
+}
